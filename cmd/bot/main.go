@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/ftikhonin/BuddyBudgetBot/internal/app/commands"
 	"github.com/joho/godotenv"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -29,14 +30,19 @@ func main() {
 
 	updates := bot.GetUpdatesChan(u)
 
+	commander := commands.NewCommander(bot)
+
 	for update := range updates {
-		if update.Message != nil { // If we got a message
-			log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
-
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-			msg.ReplyToMessageID = update.Message.MessageID
-
-			bot.Send(msg)
+		if update.Message == nil { // If we got a message
+			continue
 		}
+
+		switch update.Message.Command() {
+		case "help":
+			commander.Help(update.Message)
+		default:
+			commander.Default(update.Message)
+		}
+
 	}
 }
