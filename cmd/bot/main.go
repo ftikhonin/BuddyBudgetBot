@@ -40,6 +40,10 @@ func main() {
 		switch update.Message.Command() {
 		case "help":
 			commander.Help(update.Message)
+		case "income":
+			commander.Income(update.Message)
+		case "expense":
+			commander.Expense(update.Message)
 		default:
 			commander.Default(update.Message)
 		}
