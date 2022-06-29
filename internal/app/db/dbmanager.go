@@ -28,7 +28,7 @@ func InitDB() {
 }
 
 func createTable(db *sql.DB) {
-	createStudentTableSQL := `CREATE TABLE Account (
+	createTableSQL := `CREATE TABLE Account (
 		"ID" integer NOT NULL PRIMARY KEY AUTOINCREMENT,		
 		"ChatID" TEXT,
 		"Balance" REAL,
@@ -75,7 +75,7 @@ func createTable(db *sql.DB) {
 	  );`
 
 	log.Println("Creating tables...")
-	statement, err := db.Prepare(createStudentTableSQL)
+	statement, err := db.Prepare(createTableSQL)
 	if err != nil {
 		log.Fatal(err.Error())
 	}

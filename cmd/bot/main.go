@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/ftikhonin/BuddyBudgetBot/internal/app/commands"
+	dbmanager "github.com/ftikhonin/BuddyBudgetBot/internal/app/db"
 	"github.com/joho/godotenv"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -23,6 +24,8 @@ func main() {
 	bot.Debug = true
 
 	log.Printf("Authorized on account %s", bot.Self.UserName)
+
+	dbmanager.InitDB()
 
 	u := tgbotapi.UpdateConfig{
 		Timeout: 60,
