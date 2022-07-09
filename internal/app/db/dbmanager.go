@@ -2,108 +2,97 @@ package dbmanager
 
 import (
 	"database/sql"
+	"errors"
+	"fmt"
 	"log"
 	"os"
+	"strconv"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 func InitDB() {
 
-	os.Remove("sqlite-database.db")
+	os.Remove(dbName)
 
-	log.Println("Creating sqlite-database.db...")
-	file, err := os.Create("sqlite-database.db")
-	if err != nil {
-		log.Fatal(err.Error())
+	var _ error
+
+	if _, err := os.Stat(dbName); err != nil {
+		log.Println("Creating sqlite-database.db...")
+		file, err := os.Create(dbName)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		defer file.Close()
+
+		Execute(createAccountTable)
+		Execute(createChatTable)
+		Execute(createOperationTable)
+		Execute(createCurrencyTable)
+		Execute(createOperationTypeTable)
+		Execute(createCategoryTable)
+		Execute(insertCurrency)
+		Execute(insertOperationTypeExpense)
+		Execute(insertOperationTypeIncome)
+
+		log.Println("Database created")
 	}
-	file.Close()
-	log.Println("sqlite-database.db created")
 
-	sqliteDatabase, _ := sql.Open("sqlite3", "./sqlite-database.db")
-	defer sqliteDatabase.Close()
-	createTable(sqliteDatabase)
-	insertDefault(sqliteDatabase)
-	displayCurrency(sqliteDatabase)
 }
 
-func createTable(db *sql.DB) {
-	createTableSQL := `CREATE TABLE Account (
-		"ID" integer NOT NULL PRIMARY KEY AUTOINCREMENT,		
-		"ChatID" TEXT,
-		"Balance" REAL,
-		"InitialDate" TEXT,
-		"CurrencyID" integer
-	  );
-	
-	  CREATE TABLE Chat (
-		"ID" integer NOT NULL PRIMARY KEY AUTOINCREMENT,		
-		"FirstName" TEXT,
-		"LastName" TEXT,
-		"Username" TEXT,
-		"Moment" TEXT				
-	  );
-	
-	  CREATE TABLE Operation (
-		"ID" integer NOT NULL PRIMARY KEY AUTOINCREMENT,		
-		"AccountID" integer,
-		"OperationTypeID" integer,
-		"Amount" REAL,
-		"CategoryID" integer
-		"Comment" TEXT
-		"Moment" TEXT		
-	  );
-	
-	  CREATE TABLE Currency (
-		"ID" integer NOT NULL PRIMARY KEY AUTOINCREMENT,		
-		"Name" TEXT,
-		"ShortName" TEXT,
-		"Label" TEXT		
-	  );
-	
-	  CREATE TABLE OperationType (
-		"ID" integer NOT NULL PRIMARY KEY AUTOINCREMENT,		
-		"Name" TEXT,
-		"ShortName" TEXT	
-	  );
-	
-	  CREATE TABLE Category (
-		"ID" integer NOT NULL PRIMARY KEY AUTOINCREMENT,		
-		"Name" TEXT,
-		"ShortName" TEXT,
-		"Label" TEXT		
-	  );`
+func Execute(statement string) error {
 
-	log.Println("Creating tables...")
-	statement, err := db.Prepare(createTableSQL)
-	if err != nil {
-		log.Fatal(err.Error())
+	var db *sql.DB
+	var _ string
+	var err error
+	if _, err := os.Stat(dbName); err == nil {
+		db, _ = sql.Open("sqlite3", "./sqlite-database.db")
+
+		log.Println("Executing statement: " + statement)
+		preparedStatement, err := db.Prepare(statement)
+
+		if err != nil {
+			log.Println(err.Error())
+			return err
+		}
+		_, err = preparedStatement.Exec()
+
+		if err != nil {
+			log.Println(err.Error())
+			return err
+		}
+
+		log.Println("Success")
+
+		defer db.Close()
 	}
-	statement.Exec()
-	log.Println("Tables created")
+	return err
 }
 
-func insertDefault(db *sql.DB) {
-	log.Println("Inserting default record ...")
-	insertStudentSQL := `INSERT INTO Currency(Name, ShortName, Label) VALUES ("United States dollar", "USD", "$");
-	INSERT INTO OperationType(Name) VALUES ("Income");
-	INSERT INTO OperationType(Name) VALUES ("Expense");
-	INSERT INTO Category(Name) VALUES ("Deposits");
-	INSERT INTO Category(Name) VALUES ("Salary");
-	INSERT INTO Category(Name) VALUES ("Bills");
-	INSERT INTO Category(Name) VALUES ("Food");`
-	statement, err := db.Prepare(insertStudentSQL)
-	if err != nil {
-		log.Fatalln(err.Error())
+func ExecuteScalar(statement string) (string, error) {
+
+	var db *sql.DB
+	var _ string
+	var result string
+	var err error
+	if _, err = os.Stat(dbName); err == nil {
+		db, _ = sql.Open("sqlite3", "./sqlite-database.db")
+		defer db.Close()
+
+		log.Println("Executing statement: " + statement)
+		err = db.QueryRow(statement).Scan(&result)
+		if err != nil {
+			return result, err
+		}
+		log.Println("Execute success: " + statement)
+
 	}
-	_, err = statement.Exec()
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
+	return result, nil
 }
 
-func displayCurrency(db *sql.DB) {
-	row, err := db.Query("SELECT * FROM Currency")
+func displayCurrency(db *sql.DB) string {
+	row, err := db.Query(getCurrency)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -114,6 +103,65 @@ func displayCurrency(db *sql.DB) {
 		var ShortName string
 		var Label string
 		row.Scan(&id, &Name, &ShortName, &Label)
-		log.Println("Currency: ", Name, " ", ShortName, " ", Label)
+		return "Currency: " + Name + " " + ShortName + " " + Label
 	}
+	return ""
+}
+
+func AddAccount(chatID int64, balance float32) {
+	Execute(
+		fmt.Sprintf(insertAccount, chatID, balance, time.Now(), 1))
+}
+
+func GetBalance(chatID int64) (string, error) {
+
+	result, err := ExecuteScalar(
+		fmt.Sprintf(getBalance, chatID))
+	if err != nil {
+		err = errors.New("First, register using the command /req")
+		return "", err
+	}
+	return result, nil
+
+}
+
+func SetIncome(chatID int64, amount float64, comment string) (string, error) {
+
+	err := Execute(
+		fmt.Sprintf(insertOperation, chatID, 2, amount, 1, comment, time.Now()))
+	if err != nil {
+		return "", err
+	}
+
+	Execute(
+		fmt.Sprintf(updateAccountBalance, amount, chatID))
+	if err != nil {
+		return "", err
+	}
+
+	return GetBalance(chatID)
+
+}
+
+func SetExpense(chatID int64, amount float64, comment string) (string, error) {
+	result, _ := ExecuteScalar(fmt.Sprintf(getBalance, chatID))
+	currentBalance, _ := strconv.ParseFloat(result, 64)
+	if currentBalance < amount {
+		return "", errors.New("The amount cannot be more than the current balance")
+	}
+
+	err := Execute(
+		fmt.Sprintf(insertOperation, chatID, 1, amount, 1, comment, time.Now()))
+	if err != nil {
+		return "", err
+	}
+
+	Execute(
+		fmt.Sprintf(updateAccountBalance, -amount, chatID))
+	if err != nil {
+		return "", err
+	}
+
+	return GetBalance(chatID)
+
 }
