@@ -14,10 +14,7 @@ import (
 
 func InitDB() {
 
-	os.Remove(dbName)
-
-	var _ error
-
+	//os.Remove(dbName)
 	if _, err := os.Stat(dbName); err != nil {
 		log.Println("Creating sqlite-database.db...")
 		file, err := os.Create(dbName)
@@ -27,7 +24,6 @@ func InitDB() {
 		defer file.Close()
 
 		Execute(createAccountTable)
-		Execute(createChatTable)
 		Execute(createOperationTable)
 		Execute(createCurrencyTable)
 		Execute(createOperationTypeTable)
@@ -44,7 +40,6 @@ func InitDB() {
 func Execute(statement string) error {
 
 	var db *sql.DB
-	var _ string
 	var err error
 	if _, err := os.Stat(dbName); err == nil {
 		db, _ = sql.Open("sqlite3", "./sqlite-database.db")
@@ -108,7 +103,7 @@ func displayCurrency(db *sql.DB) string {
 	return ""
 }
 
-func AddAccount(chatID int64, balance float32) {
+func Register(chatID int64, balance float32) {
 	Execute(
 		fmt.Sprintf(insertAccount, chatID, balance, time.Now(), 1))
 }
@@ -122,6 +117,50 @@ func GetBalance(chatID int64) (string, error) {
 		return "", err
 	}
 	return result, nil
+
+}
+
+func GetList(chatID int64, forDate string) (string, error) {
+	var db *sql.DB
+	var _ string
+	var err error
+	if _, err = os.Stat(dbName); err == nil {
+		db, _ = sql.Open("sqlite3", "./sqlite-database.db")
+		defer db.Close()
+		statement := fmt.Sprintf(getList, chatID, forDate)
+		log.Println("Executing statement: " + statement)
+		row, err := db.Query(statement)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer row.Close()
+		var result string = ""
+		for row.Next() {
+			var ID int
+			var ChatID string
+			var OperationTypeID int
+			var Amount string
+			var CategoryID int
+			var Comment string
+			var Moment string
+			row.Scan(&ID, &ChatID, &OperationTypeID, &Amount, &CategoryID, &Comment, &Moment)
+
+			if OperationTypeID == 1 {
+				result += "\U00002796   " //:heavy_minus_sign:
+			} else {
+				result += "\U00002795   " //:heavy_plus_sign:
+			}
+
+			// input := "2017-08-31"
+			layout := "2006-01-02 15:04:05" //magical reference date
+			t, _ := time.Parse(layout, Moment)
+			result += Amount + " " + "   " + t.Format("02-Jan-2006") + "\n"
+		}
+		balance, _ := GetBalance(chatID)
+		result += "________________________\n" + balance
+		return result, nil
+	}
+	return "", nil
 
 }
 

@@ -5,6 +5,6 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-func (c *Commander) AddAccount(inputMessage *tgbotapi.Message) {
-	dbmanager.AddAccount(inputMessage.Chat.ID, 300)
+func (c *Commander) Register(inputMessage *tgbotapi.Message) {
+	dbmanager.Register(inputMessage.Chat.ID, 0)
 }

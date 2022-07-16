@@ -8,13 +8,6 @@ const (
 		"InitialDate" TEXT,
 		"CurrencyID" integer
 	);`
-	createChatTable = `CREATE TABLE Chat (
-		"ID" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
-		"FirstName" TEXT,
-		"LastName" TEXT,
-		"Username" TEXT,
-		"Moment" TEXT
-		);`
 	createOperationTable = `CREATE TABLE Operation (
 			"ID" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
 			"ChatID" integer,
@@ -52,4 +45,14 @@ const (
 	updateAccountBalance = `UPDATE Account SET Balance = Balance + "%g" WHERE ChatID = %d`
 	getBalance           = `SELECT Balance as result FROM Account WHERE ChatID =%d LIMIT 1;`
 	getCurrency          = `SELECT * FROM Currency`
+	getList              = `SELECT ID
+								  ,ChatID
+								  ,OperationTypeID
+								  ,Amount
+								  ,CategoryID
+								  ,Comment
+								  ,substr(Moment,1,19) AS Moment
+							  FROM Operation 
+							 WHERE ChatID = %d 
+							   AND substr(Moment,1,4) || substr(Moment,6,2) || substr(Moment,9,2) >= "%s"`
 )

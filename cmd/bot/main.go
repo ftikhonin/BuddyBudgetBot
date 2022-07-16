@@ -49,8 +49,10 @@ func main() {
 			commander.Expense(update.Message)
 		case "balance":
 			commander.Balance(update.Message)
-		case "reg":
-			commander.AddAccount(update.Message)
+		case "list":
+			commander.List(update.Message)
+		case "register":
+			commander.Register(update.Message)
 		default:
 			commander.Default(update.Message)
 		}
