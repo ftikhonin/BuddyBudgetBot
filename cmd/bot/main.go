@@ -6,24 +6,23 @@ import (
 
 	"github.com/ftikhonin/BuddyBudgetBot/internal/app/commands"
 	dbmanager "github.com/ftikhonin/BuddyBudgetBot/internal/app/db"
-	"github.com/joho/godotenv"
-
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	godotenv.Load()
 
+	godotenv.Load(".env")
 	token := os.Getenv("TOKEN")
 
 	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
-		log.Panic(err)
+		log.Panicf("Authorization failed. Error: %s", err)
 	}
 
-	bot.Debug = true
-
 	log.Printf("Authorized on account %s", bot.Self.UserName)
+
+	bot.Debug = true
 
 	dbmanager.InitDB()
 
