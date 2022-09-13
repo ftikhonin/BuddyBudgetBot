@@ -9,10 +9,12 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-func (c *Commander) Expense(inputMessage *tgbotapi.Message) {
+func (c *Commander) Expense(inputMessage *tgbotapi.Message) (inlineArg bool) {
 
 	args := inputMessage.CommandArguments()
-
+	if args == "" {
+		return false
+	}
 	arg, err := strconv.ParseFloat(args, 32)
 
 	if err != nil {
@@ -20,7 +22,7 @@ func (c *Commander) Expense(inputMessage *tgbotapi.Message) {
 		log.Println("wrong args", args)
 		msg := tgbotapi.NewMessage(inputMessage.Chat.ID, fmt.Sprintf("Please enter the correct amount"))
 		c.bot.Send(msg)
-		return
+		return true
 	}
 
 	if arg <= 0 {
@@ -36,7 +38,7 @@ func (c *Commander) Expense(inputMessage *tgbotapi.Message) {
 			log.Println("something wrong:" + err.Error())
 			msg := tgbotapi.NewMessage(inputMessage.Chat.ID, err.Error())
 			c.bot.Send(msg)
-			return
+			return true
 		}
 
 		if s, err := strconv.ParseFloat(balance, 32); err == nil {
@@ -44,4 +46,5 @@ func (c *Commander) Expense(inputMessage *tgbotapi.Message) {
 			c.bot.Send(msg)
 		}
 	}
+	return true
 }

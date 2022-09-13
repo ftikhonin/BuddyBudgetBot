@@ -9,20 +9,23 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-func (c *Commander) Income(inputMessage *tgbotapi.Message) {
+func (c *Commander) Income(inputMessage *tgbotapi.Message) (inlineArg bool) {
 
 	args := inputMessage.CommandArguments()
+	if args == "" {
+		return false
+	}
 
 	arg, err := strconv.ParseFloat(args, 32)
 
 	if err != nil {
 		log.Println("wrong args", args)
-		return
+		return true
 	}
 
 	if arg <= 0 {
 
-		msg := tgbotapi.NewMessage(inputMessage.Chat.ID, fmt.Sprintf("Please enter a positive number"))
+		msg := tgbotapi.NewMessage(inputMessage.Chat.ID, "Please, enter a positive number")
 		c.bot.Send(msg)
 
 	} else {
@@ -30,7 +33,7 @@ func (c *Commander) Income(inputMessage *tgbotapi.Message) {
 		balance, err := dbmanager.SetIncome(inputMessage.Chat.ID, arg, "test")
 		if err != nil {
 			log.Println("something wrong")
-			return
+			return true
 
 		}
 
@@ -41,5 +44,6 @@ func (c *Commander) Income(inputMessage *tgbotapi.Message) {
 
 		}
 	}
+	return true
 
 }

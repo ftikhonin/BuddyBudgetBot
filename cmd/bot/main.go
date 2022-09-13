@@ -33,8 +33,11 @@ func main() {
 	updates := bot.GetUpdatesChan(u)
 
 	commander := commands.NewCommander(bot)
-
+	var inlineArg bool
+	var command string
+	// TODO: add a goroutine
 	for update := range updates {
+		inlineArg = true
 		if update.Message == nil { // If we got a message
 			continue
 		}
@@ -43,9 +46,18 @@ func main() {
 		case "help":
 			commander.Help(update.Message)
 		case "income":
-			commander.Income(update.Message)
+			if !commander.Income(update.Message) {
+				inlineArg = false
+				command = update.Message.Command()
+				break
+			}
 		case "expense":
-			commander.Expense(update.Message)
+
+			if !commander.Expense(update.Message) {
+				inlineArg = false
+				command = update.Message.Command()
+				break
+			}
 		case "balance":
 			commander.Balance(update.Message)
 		case "list":
@@ -54,6 +66,14 @@ func main() {
 			commander.Register(update.Message)
 		default:
 			commander.Default(update.Message)
+		}
+
+		if !inlineArg {
+
+			//TODO: Add handling for argument
+
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Please enter an "+command+".")
+			bot.Send(msg)
 		}
 
 	}
