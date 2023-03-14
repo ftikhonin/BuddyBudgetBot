@@ -13,8 +13,6 @@ import (
 )
 
 func InitDB() {
-
-	//os.Remove(dbName)
 	if _, err := os.Stat(dbName); err != nil {
 		log.Println("Creating sqlite-database.db...")
 		file, err := os.Create(dbName)
@@ -151,7 +149,6 @@ func GetList(chatID int64, forDate string) (string, error) {
 				result += "\U00002795   " //:heavy_plus_sign:
 			}
 
-			// input := "2017-08-31"
 			layout := "2006-01-02 15:04:05" //magical reference date
 			t, _ := time.Parse(layout, Moment)
 			result += Amount + " " + "   " + t.Format("02-Jan-2006") + "\n"
